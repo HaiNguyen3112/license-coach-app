@@ -1,5 +1,5 @@
 // app/(auth)/login.tsx  ← adjust the path to match your routing
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import axiosInstance, {
@@ -15,12 +16,15 @@ import axiosInstance, {
 } from "@/libs/axios";
 import { useMutation } from "@tanstack/react-query";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuthStore } from "@/stores/auth";
+import { authenticateWithBiometrics } from "@/utils/auth/biometric";
 
 type LoginPayload = { username: string; password: string };
 type LoginResponse = { accessToken: string; refreshToken?: string; user: any };
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { login } = useAuthStore();
 
   const [credentials, setCredentials] = useState<LoginPayload>({
     username: "",
@@ -38,10 +42,12 @@ export default function LoginScreen() {
       const { data } = await axiosInstance.post("/api/auth", payload);
       return data;
     },
+
     onSuccess: async (data) => {
       console.log("data: ", data);
 
-      await AsyncStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
+      await login(data.accessToken);
+
       if (data.refreshToken) {
         await AsyncStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
       }
@@ -54,11 +60,29 @@ export default function LoginScreen() {
   const handleChange = (field: keyof LoginPayload) => (value: string) =>
     setCredentials((prev) => ({ ...prev, [field]: value }));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!credentials.username || !credentials.password) return;
     // loginMutation(credentials);
+    await login("asdasdasdas");
     router.replace("/(user)");
   };
+
+  // 🔐 Biometric login on screen load
+  // useEffect(() => {
+  //   (async () => {
+  //     const ok = await authenticateWithBiometrics();
+  //     if (ok) {
+  //       // Try to retrieve and reuse saved token
+  //       const token = await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
+  //       if (token) {
+  //         await login(token);
+  //         router.replace("/(user)");
+  //       } else {
+  //         Alert.alert("No saved session found. Please log in.");
+  //       }
+  //     }
+  //   })();
+  // }, []);
 
   /* ---------------------------------  UI  ------------------------------------- */
   return (
@@ -80,6 +104,7 @@ export default function LoginScreen() {
         secureTextEntry
         value={credentials.password}
         onChangeText={handleChange("password")}
+        onSubmitEditing={handleSubmit}
       />
 
       {isError && (
