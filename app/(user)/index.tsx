@@ -1,11 +1,12 @@
 import Home from "@/components/Home";
-import { View, StyleSheet, Platform } from "react-native";
+import { View, StyleSheet, Platform, Text } from "react-native";
 
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 export default function Index() {
   return (
     <GestureHandlerRootView style={styles.container}>
+      <Text>This is user tabs</Text>
       <Home />
     </GestureHandlerRootView>
   );
